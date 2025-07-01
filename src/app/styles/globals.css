@@ -1,0 +1,131 @@
+/* Base styles for all elements */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Cores e variáveis CSS (opcional, mas recomendado) */
+:root {
+  --header-bg-color: #FF7F26;
+  --main-footer-color: #A349A4;
+  --text-color: #333;
+}
+
+/* Mobile-first approach - default styles for small screens */
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Garante que o container ocupe a altura total da viewport */
+}
+
+/* Header Styles */
+.header {
+  background-color: var(--header-bg-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap; /* Permite que os itens quebrem linha em telas menores */
+}
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+}
+
+.socialIcons {
+  display: flex;
+  gap: 1rem; /* Espaçamento entre os ícones */
+}
+
+.socialIcons img {
+  display: block; /* Remove o espaço extra abaixo da imagem */
+  max-width: 30px;
+  height: auto;
+}
+
+/* Main Styles */
+.main {
+  flex-grow: 1; /* Permite que o main ocupe o espaço restante */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: white; /* Cor do texto no main */
+  text-align: center;
+  /* Degradê da esquerda para a direita */
+  background: linear-gradient(to right, #A349A4, #853787); /* Ajuste os tons para o seu degradê ideal */
+}
+
+.main h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.main p {
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+/* Footer Styles */
+.footer {
+  background-color: var(--main-footer-color);
+  padding: 1.5rem;
+  text-align: center;
+  color: white; /* Cor do texto no footer */
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.footer a {
+  color: white;
+  text-decoration: underline;
+}
+
+/* Media Queries para Responsividade */
+
+/* Tablets e desktops pequenos */
+@media (min-width: 768px) {
+  .header {
+    padding: 1rem 3rem;
+  }
+
+  .main h1 {
+    font-size: 3.5rem;
+  }
+
+  .main p {
+    font-size: 1.5rem;
+  }
+}
+
+/* Desktops maiores */
+@media (min-width: 1024px) {
+  .header {
+    padding: 1rem 5rem;
+  }
+}
+
+/* Media Query para acessibilidade - prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  /* Desabilitar animações se o usuário preferir */
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
