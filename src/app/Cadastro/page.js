@@ -1,45 +1,75 @@
 "use client";
 
 import styles from "./Register.module.css";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthentication } from "../hooks/useAuthentication";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Modal from "../components/Modal/Modal"; // Certifique-se de que o caminho está correto
 
 const RegisterPage = () => {
-  const [nome, setNome] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-  const [confirmaSenha, setConfirmaSenha] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const {
     register,
     loginWithGoogle,
     error: authError,
     loading,
   } = useAuthentication();
+
   const [error, setError] = useState("");
+  const [isClient, setIsClient] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Novo useEffect para o timer do modal
+  useEffect(() => {
+    let timer;
+    if (isModalOpen) {
+      timer = setTimeout(() => {
+        closeModal();
+      }, 8000); // Fecha o modal após 8 segundos
+    }
+
+    // Função de limpeza para evitar vazamento de memória e fechar o timer se o modal for fechado manualmente
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [isModalOpen]); // Roda sempre que isModalOpen mudar
 
   const router = useRouter();
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => {
+    setIsModalOpen(false);
+    router.push("/Login");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setError(""); // Sempre limpa erros anteriores ao tentar novamente
+    setError("");
 
-    if (senha !== confirmaSenha) {
+    if (password !== confirmPassword) {
       setError("As senhas precisam ser iguais.");
       return;
     }
 
-    // Validação de senhas mínimas (exemplo)
-    if (senha.length < 6) {
+    if (password.length < 6) {
       setError("A senha precisa ter no mínimo 6 caracteres.");
       return;
     }
 
-    const user = await register({ email, password: senha });
+    const user = await register({ email, password: password, displayName: displayName });
     if (user) {
-      router.push("/Dashboard");
+      openModal();
     }
   };
 
@@ -61,8 +91,8 @@ const RegisterPage = () => {
           <input
             type="text"
             placeholder="Nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
             required
           />
         </label>
@@ -81,8 +111,8 @@ const RegisterPage = () => {
           <input
             type="password"
             placeholder="Senha"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             onFocus={clearErrorOnFocus}
             required
           />
@@ -92,12 +122,25 @@ const RegisterPage = () => {
           <input
             type="password"
             placeholder="Confirme a senha"
-            value={confirmaSenha}
-            onChange={(e) => setConfirmaSenha(e.target.value)}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
             onFocus={clearErrorOnFocus}
             required
           />
         </label>
+
+        {(error || authError) && (
+          <p
+            style={{
+              color: "white",
+              border: "1px dotted #FF7F26",
+              backgroundColor: "red",
+              padding: "8px",
+            }}
+          >
+            {error || authError}
+          </p>
+        )}
 
         <button
           className={`${styles.btn} ${loading ? styles.loading : ""}`}
@@ -115,24 +158,21 @@ const RegisterPage = () => {
         >
           Entrar com Google
         </button>
-
-        {/* Exibir erro logo abaixo do botão de submit */}
-        {(error || authError) && (
-          <p
-            style={{
-              color: "white",
-              border: "1px dotted #FF7F26",
-              backgroundColor: "red",
-              padding: "8px", 
-            }}
-          >
-            {error || authError}
-          </p>
-        )}
       </form>
       <p>
         Já tem uma conta? <Link href="/Login">Faça login aqui</Link>
       </p>
+
+      {isClient && (
+        <Modal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          title="Verificação de E-mail"
+        >
+          <p>Seu cadastro foi realizado com sucesso!</p>
+          <p>Enviamos um e-mail de verificação para **{email}**. Por favor, verifique sua caixa de entrada (e spam) para confirmar sua conta.</p>          
+        </Modal>
+      )}
     </div>
   );
 };
