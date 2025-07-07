@@ -60,9 +60,9 @@ export const useAuthentication = () => {
       return user;
     } catch (err) {
       const errorMap = {
-        "auth/wrong-password": "1 E-mail ou senha incorretos.",
-        "auth/user-not-found": "2 E-mail ou senha incorretos.",
-        "auth/invalid-credential": "3 E-mail ou senha incorretos.",
+        "auth/wrong-password": "E-mail ou senha incorretos.",
+        "auth/user-not-found": "E-mail ou senha incorretos.",
+        "auth/invalid-credential": "E-mail ou senha incorretos. Se você se cadastrou com Google clique em 'Entrar com Google'",
         "auth/invalid-email": "Formato de e-mail inválido.",
         "auth/account-exists-with-different-credential":
           "Este e-mail já está cadastrado com outro método (ex: Google). Por favor, use a opção 'Entrar com Google' ou redefina sua senha.",
