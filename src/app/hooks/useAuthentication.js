@@ -5,7 +5,8 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
-  sendEmailVerification, 
+  sendEmailVerification,
+  fetchSignInMethodsForEmail,
 } from "firebase/auth";
 
 import { useState } from "react";
@@ -15,86 +16,104 @@ export const useAuthentication = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
- const register = async ({ email, password, displayName }) => {
+  const clearAuthError = () => setError(null);
+  const startLoading = () => {
     setLoading(true);
     setError(null);
+  };
+  const stopLoading = () => setLoading(false);
+
+  const register = async ({ email, password, displayName }) => {
+    startLoading();
     try {
-      // 1. Cria o usuário no Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
-
-      // 2. Salva o displayName no Firebase Authentication
-      await updateProfile(user, { displayName: displayName });
-      // console.log("DisplayName salvo no Authentication:", displayName);
-
-      // 3. Envia o e-mail de verificação
+      await updateProfile(user, { displayName: displayName.trim() });
       await sendEmailVerification(user);
-      // console.log("E-mail de verificação enviado para:", user.email);
-
-      // Não salva no Firestore neste momento, como solicitado.
-
-      return user; // Retorna o usuário criado/atualizado
+      return user;
     } catch (err) {
-      // console.error("Erro no cadastro:", err.message);
-      let errorMessage = "Ocorreu um erro no cadastro.";
-      if (err.code === "auth/email-already-in-use") {
-        errorMessage = "Este e-mail já está em uso.";
-      } else if (err.code === "auth/weak-password") {
-        errorMessage = "A senha deve ter pelo menos 6 caracteres.";
-      } else if (err.code === "auth/invalid-email") {
-        errorMessage = "O formato do e-mail é inválido.";
-      }
-      setError(errorMessage);
+      const errorMap = {
+        "auth/email-already-in-use": "Este e-mail já está em uso.",
+        "auth/weak-password": "A senha deve ter pelo menos 6 caracteres.",
+        "auth/invalid-email": "O formato do e-mail é inválido.",
+      };
+      setError(errorMap[err.code] || "Ocorreu um erro no cadastro.");
     } finally {
-      setLoading(false);
+      stopLoading();
     }
   };
 
   const loginWithEmail = async ({ email, password }) => {
-    setLoading(true);
-    setError(null);
+    startLoading();
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return userCredential.user;
+      const normalizedEmail = email.trim().toLowerCase();
+
+      // Verifica os métodos de login associados ao e-mail
+      const signInMethods = await fetchSignInMethodsForEmail(auth, normalizedEmail);
+
+      if (signInMethods.length === 0) {
+        setError("Este e-mail não está cadastrado.");
+        return null;
+      }
+
+      if (signInMethods.includes("google.com") && !signInMethods.includes("password")) {
+        setError("Este e-mail está vinculado ao Google. Use 'Entrar com Google'.");
+        return null;
+      }
+
+      // Login normal com e-mail e senha
+      const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        setError("Seu e-mail ainda não foi verificado. Verifique sua caixa de entrada.");
+        await signOut(auth);
+        return null;
+      }
+
+      return user;
     } catch (err) {
-      setError('E-mail ou senha incorretos. (' + err.message + ')');
+      const errorMap = {
+        "auth/wrong-password": "E-mail ou senha incorretos.",
+        "auth/invalid-email": "Formato de e-mail inválido.",
+        "auth/invalid-credential": "E-mail ou senha incorretos.",
+      };
+      setError(errorMap[err.code] || `Erro ao fazer login: ${err.message}`);
+      return null;
     } finally {
-      setLoading(false);
+      stopLoading();
     }
   };
 
   const loginWithGoogle = async () => {
-    setLoading(true);
-    setError(null);
+    startLoading();
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      // Para login com Google, o displayName e o status de verificação já vêm do provedor.
-      // Geralmente não é necessário enviar e-mail de verificação para contas Google.
       return result.user;
     } catch (err) {
-      let errorMessage = "Erro ao entrar com o Google.";
-      if (err.code === "auth/popup-closed-by-user") {
-        errorMessage = "Login com Google cancelado.";
-      } else {
-        errorMessage = `Erro: ${err.message}`;
-      }
-      setError(errorMessage);
+      const errorMap = {
+        "auth/popup-closed-by-user": "Login com Google cancelado.",
+        "auth/popup-blocked": "O pop-up foi bloqueado. Permita pop-ups para este site.",
+        "auth/cancelled-popup-request": "A requisição do pop-up foi cancelada.",
+        "auth/operation-not-allowed": "Login com Google não está habilitado no Firebase.",
+        "auth/credential-already-in-use": "Este e-mail já está associado a outra conta. Use outro método.",
+      };
+      setError(errorMap[err.code] || `Erro: ${err.message}`);
+      return null;
     } finally {
-      setLoading(false);
+      stopLoading();
     }
   };
 
   const logout = async () => {
-    setLoading(true);
-    setError(null);
+    startLoading();
     try {
       await signOut(auth);
-    } catch (err) {
+    } catch {
       setError("Erro ao fazer logout.");
-      // console.error("Erro no logout:", err.message);
     } finally {
-      setLoading(false);
+      stopLoading();
     }
   };
 
@@ -104,6 +123,7 @@ export const useAuthentication = () => {
     loginWithGoogle,
     logout,
     error,
-    loading
+    loading,
+    clearAuthError,
   };
 };
